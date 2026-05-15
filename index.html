@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover" />
   <title>Andormorphic Arm — Calibration + Recording</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Distinctive Fonts: Playfair Display (headings), Lora (body), and a clean sans for UI -->
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=Lora:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
-
-    /* ========= LIGHT THEME with bold modern fonts ========= */
+    /* ========= LIGHT THEME with sophisticated typography ========= */
     :root {
       --bg:        #f8fafc;
       --surface:   #ffffff;
@@ -25,8 +25,6 @@
       --rose:      #e11d48;
       --text:      #0f172a;
       --muted:     #475569;
-      --mono:      'JetBrains Mono', monospace;
-      --sans:      'Inter', 'DM Sans', sans-serif;
       --shadow:    0 4px 12px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.05);
       --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
     }
@@ -34,7 +32,7 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: var(--sans);
+      font-family: 'Lora', 'Times New Roman', serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
@@ -45,9 +43,27 @@
       line-height: 1.5;
     }
 
-    /* Bolder typography overrides */
-    h1, h2, h3, .btn, .metric-value, .thr-val, .rec-status, .badge, .calib-title, .welcome-title {
+    /* Heading style: Playfair Display */
+    h1, h2, h3, .welcome-title, .calib-title, .done-title, .recording-title, .thr-title {
+      font-family: 'Playfair Display', 'Georgia', serif;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    /* UI elements / buttons / badges: clean sans (Akt style) */
+    .btn, .btn-start, .btn-ghost, .btn-rec, .rec-status, .badge, .btn-complete, .mode-pill, .metric-label, .serial-name {
+      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
       font-weight: 600;
+    }
+
+    /* Monospace for data values: keep JetBrains Mono for numbers */
+    .metric-value, .thr-val, .serial-body, .legend-item, .live-dot + span {
+      font-family: 'JetBrains Mono', 'SF Mono', monospace;
+    }
+
+    /* General body text uses Lora */
+    p, .welcome-sub, .done-sub, .thr-hint, .metric-value, .serial-line {
+      font-family: 'Lora', serif;
     }
 
     /* ── TOP BAR ── */
@@ -76,25 +92,24 @@
     }
     .topbar-logo svg { width: 22px; height: 22px; stroke: var(--green); fill: none; stroke-width: 2; }
     .topbar-name {
-      font-family: var(--mono);
-      font-size: 16px;
+      font-family: 'Playfair Display', serif;
+      font-size: 18px;
       letter-spacing: 1px;
       color: var(--text);
       text-transform: uppercase;
-      font-weight: 700;
+      font-weight: 800;
     }
     .topbar-badges {
       display: flex; gap: 10px;
     }
     .badge {
       font-size: 13px;
-      font-family: var(--mono);
       padding: 6px 12px;
       border-radius: 6px;
       border: 1px solid var(--border2);
       background: var(--bg);
       color: var(--muted);
-      letter-spacing: 0.5px;
+      letter-spacing: 0.3px;
       font-weight: 600;
     }
 
@@ -120,9 +135,8 @@
     }
     .welcome-icon svg { width: 60px; height: 60px; stroke: var(--green); stroke-width: 1.8; }
     .welcome-title {
-      font-family: var(--mono);
-      font-size: 34px;
-      letter-spacing: 2px;
+      font-size: 42px;
+      letter-spacing: 1px;
       color: var(--text);
       font-weight: 800;
     }
@@ -143,7 +157,8 @@
       border-radius: 12px;
       border: 1px solid var(--border2);
       background: var(--card-alt);
-      font-size: 16px; color: var(--muted);
+      font-size: 16px;
+      color: var(--muted);
       font-weight: 600;
     }
     .mode-pill svg { width: 20px; height: 20px; stroke: var(--green); stroke-width: 2; }
@@ -152,9 +167,8 @@
       padding: 16px 42px;
       background: var(--green);
       color: #fff;
-      font-family: var(--mono);
       font-size: 18px;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
       border: none;
       border-radius: 12px;
       cursor: pointer;
@@ -183,15 +197,14 @@
       gap: 16px;
     }
     .calib-title {
-      font-family: var(--mono);
-      font-size: 20px;
-      letter-spacing: 1px;
+      font-size: 24px;
+      letter-spacing: 0.5px;
       text-transform: uppercase;
       color: var(--text);
       display: flex;
       align-items: center;
       gap: 12px;
-      font-weight: 700;
+      font-weight: 800;
     }
     .live-dot {
       width: 12px; height: 12px; border-radius: 50%;
@@ -207,7 +220,6 @@
       border: 1px solid var(--border2);
       border-radius: 10px;
       color: var(--muted);
-      font-family: var(--sans);
       font-size: 15px;
       cursor: pointer;
       transition: all 0.15s;
@@ -228,9 +240,9 @@
     }
     .legend-item {
       display: flex; align-items: center; gap: 8px;
-      font-size: 14px; color: var(--muted);
-      font-family: var(--mono);
-      font-weight: 600;
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 500;
     }
     .leg-line { width: 24px; height: 3px; border-radius: 2px; }
     .leg-dashed { background: repeating-linear-gradient(90deg, var(--c) 0 8px, transparent 8px 12px); }
@@ -248,18 +260,16 @@
       box-shadow: var(--shadow);
     }
     .metric-label {
-      font-family: var(--mono);
       font-size: 13px;
       letter-spacing: 1px;
       text-transform: uppercase;
       color: var(--muted);
       margin-bottom: 10px;
-      font-weight: 600;
+      font-weight: 700;
     }
     .metric-value {
-      font-family: var(--mono);
       font-size: 32px;
-      font-weight: 800;
+      font-weight: 700;
       color: var(--text);
     }
     .metric-value.blue  { color: var(--blue);  }
@@ -272,22 +282,23 @@
       padding: 24px;
     }
     .thr-title {
-      font-family: var(--mono);
-      font-size: 14px;
+      font-size: 16px;
       letter-spacing: 1.5px;
       text-transform: uppercase;
       color: var(--muted);
       margin-bottom: 20px;
-      font-weight: 700;
+      font-weight: 800;
     }
     .thr-row {
       display: flex; align-items: center; gap: 20px;
       flex-wrap: wrap;
     }
     .thr-row label {
-      font-size: 16px; color: var(--muted);
+      font-size: 16px;
+      color: var(--muted);
       min-width: 70px;
       font-weight: 600;
+      font-family: 'Inter', sans-serif;
     }
     input[type=range] {
       flex: 1;
@@ -303,7 +314,6 @@
       cursor: pointer;
     }
     .thr-val {
-      font-family: var(--mono);
       font-size: 18px;
       color: var(--green);
       min-width: 80px;
@@ -322,15 +332,14 @@
       gap: 20px;
     }
     .recording-title {
-      font-family: var(--mono);
-      font-size: 15px;
+      font-size: 16px;
       letter-spacing: 1px;
       text-transform: uppercase;
       color: var(--muted);
       display: flex;
       align-items: center;
       gap: 10px;
-      font-weight: 700;
+      font-weight: 800;
     }
     .recording-actions {
       display: flex;
@@ -344,7 +353,6 @@
       gap: 10px;
       padding: 12px 24px;
       border-radius: 50px;
-      font-family: var(--mono);
       font-size: 15px;
       font-weight: 700;
       border: none;
@@ -356,7 +364,6 @@
     .btn-rec-stop { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
     .btn-rec-stop:hover:not(:disabled) { background: #fecaca; transform: scale(1.02); }
     .rec-status {
-      font-family: var(--mono);
       font-size: 14px;
       background: var(--card-alt);
       padding: 8px 18px;
@@ -385,7 +392,6 @@
     }
     .serial-dot { width: 10px; height: 10px; border-radius: 50%; }
     .serial-name {
-      font-family: var(--mono);
       font-size: 13px;
       letter-spacing: 1px;
       color: var(--muted);
@@ -396,7 +402,6 @@
       height: 140px;
       overflow-y: auto;
       padding: 16px 20px;
-      font-family: var(--mono);
       font-size: 13px;
       line-height: 1.9;
       background: #ffffff;
@@ -418,10 +423,10 @@
       border: none;
       border-radius: 60px;
       color: white;
-      font-family: var(--mono);
+      font-family: 'Inter', sans-serif;
       font-size: 18px;
       font-weight: 800;
-      letter-spacing: 1.5px;
+      letter-spacing: 1px;
       text-transform: uppercase;
       cursor: pointer;
       align-self: center;
@@ -463,9 +468,8 @@
     }
     .done-ring svg { width: 60px; height: 60px; stroke: var(--green); stroke-width: 1.8; }
     .done-title {
-      font-family: var(--mono);
-      font-size: 28px;
-      letter-spacing: 2px;
+      font-size: 34px;
+      letter-spacing: 1px;
       text-transform: uppercase;
       color: var(--green);
       font-weight: 800;
@@ -487,20 +491,20 @@
     @media (max-width: 700px) {
       body { font-size: 16px; }
       .topbar { padding: 12px 16px; }
-      .topbar-name { font-size: 14px; }
+      .topbar-name { font-size: 16px; }
       .badge { font-size: 10px; padding: 4px 8px; }
-      .welcome-title { font-size: 28px; }
+      .welcome-title { font-size: 32px; }
       .welcome-sub { font-size: 16px; }
       .mode-pill { padding: 8px 16px; font-size: 14px; }
       .btn-start { padding: 12px 28px; font-size: 16px; }
       #page-calib { padding: 16px; gap: 18px; }
-      .calib-title { font-size: 16px; }
+      .calib-title { font-size: 20px; }
       .btn-ghost { padding: 8px 12px; font-size: 13px; }
       .legend-item { font-size: 11px; }
       .chart-wrap { height: 220px; }
       .metric-value { font-size: 26px; }
       .metric-label { font-size: 11px; }
-      .thr-title { font-size: 12px; }
+      .thr-title { font-size: 14px; }
       .thr-row label { font-size: 14px; }
       .thr-val { font-size: 15px; }
       .recording-card { flex-direction: column; align-items: stretch; text-align: center; }
@@ -509,7 +513,7 @@
       .rec-status { font-size: 12px; }
       .serial-body { font-size: 11px; height: 120px; }
       .btn-complete { padding: 14px 24px; font-size: 16px; min-width: 240px; align-self: center; }
-      .done-title { font-size: 24px; }
+      .done-title { font-size: 28px; }
       .done-sub { font-size: 16px; }
       .done-actions { gap: 12px; }
       .metric { padding: 12px; }
@@ -561,7 +565,6 @@
 
   <div class="serial-card"><div class="serial-titlebar"><span class="serial-dot" style="background:#e11d48;"></span><span class="serial-dot" style="background:#d97706;"></span><span class="serial-dot" style="background:#059669;"></span><span class="serial-name">Serial Monitor (Live Log)</span></div><div class="serial-body" id="serial-body"></div></div>
   
-  <!-- IMPROVED CALIBRATION COMPLETE BUTTON -->
   <button class="btn-complete" id="btn-complete">
     <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
     Calibration Complete
