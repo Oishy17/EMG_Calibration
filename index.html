@@ -6,9 +6,9 @@
   <title>Andormorphic Arm — Calibration + Recording</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
-    /* ========= LIGHT THEME with larger fonts ========= */
+    /* ========= LIGHT THEME with bold modern fonts ========= */
     :root {
       --bg:        #f8fafc;
       --surface:   #ffffff;
@@ -25,9 +25,10 @@
       --rose:      #e11d48;
       --text:      #0f172a;
       --muted:     #475569;
-      --mono:      'Space Mono', monospace;
-      --sans:      'DM Sans', sans-serif;
+      --mono:      'JetBrains Mono', monospace;
+      --sans:      'Inter', 'DM Sans', sans-serif;
       --shadow:    0 4px 12px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -39,8 +40,14 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      font-size: 18px;  /* base larger font */
+      font-size: 18px;
+      font-weight: 500;
       line-height: 1.5;
+    }
+
+    /* Bolder typography overrides */
+    h1, h2, h3, .btn, .metric-value, .thr-val, .rec-status, .badge, .calib-title, .welcome-title {
+      font-weight: 600;
     }
 
     /* ── TOP BAR ── */
@@ -74,7 +81,7 @@
       letter-spacing: 1px;
       color: var(--text);
       text-transform: uppercase;
-      font-weight: 600;
+      font-weight: 700;
     }
     .topbar-badges {
       display: flex; gap: 10px;
@@ -88,6 +95,7 @@
       background: var(--bg);
       color: var(--muted);
       letter-spacing: 0.5px;
+      font-weight: 600;
     }
 
     /* ── PAGES ── */
@@ -110,12 +118,13 @@
       display: flex; align-items: center; justify-content: center;
       background: var(--surface);
     }
-    .welcome-icon svg { width: 60px; height: 60px; stroke: var(--green); stroke-width: 1.5; }
+    .welcome-icon svg { width: 60px; height: 60px; stroke: var(--green); stroke-width: 1.8; }
     .welcome-title {
       font-family: var(--mono);
       font-size: 34px;
       letter-spacing: 2px;
       color: var(--text);
+      font-weight: 800;
     }
     .welcome-title span { color: var(--green); }
     .welcome-sub {
@@ -123,6 +132,7 @@
       color: var(--muted);
       max-width: 480px;
       line-height: 1.6;
+      font-weight: 500;
     }
     .mode-pills {
       display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
@@ -134,6 +144,7 @@
       border: 1px solid var(--border2);
       background: var(--card-alt);
       font-size: 16px; color: var(--muted);
+      font-weight: 600;
     }
     .mode-pill svg { width: 20px; height: 20px; stroke: var(--green); stroke-width: 2; }
     .btn-start {
@@ -148,10 +159,11 @@
       border-radius: 12px;
       cursor: pointer;
       text-transform: uppercase;
-      font-weight: 600;
+      font-weight: 700;
       transition: all 0.2s;
+      box-shadow: var(--shadow);
     }
-    .btn-start:hover { background: var(--green-dim); transform: scale(1.02); }
+    .btn-start:hover { background: var(--green-dim); transform: scale(1.02); box-shadow: var(--shadow-lg); }
     .btn-start svg { width: 22px; height: 22px; stroke: #fff; stroke-width: 2; }
 
     /* ── CALIB PAGE ── */
@@ -176,7 +188,10 @@
       letter-spacing: 1px;
       text-transform: uppercase;
       color: var(--text);
-      display: flex; align-items: center; gap: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
     }
     .live-dot {
       width: 12px; height: 12px; border-radius: 50%;
@@ -196,8 +211,10 @@
       font-size: 15px;
       cursor: pointer;
       transition: all 0.15s;
+      font-weight: 600;
     }
     .btn-ghost svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2; }
+    .btn-ghost:hover { background: var(--card-alt); color: var(--text); border-color: var(--border); }
     .chart-card {
       background: var(--card);
       border: 1px solid var(--border);
@@ -213,6 +230,7 @@
       display: flex; align-items: center; gap: 8px;
       font-size: 14px; color: var(--muted);
       font-family: var(--mono);
+      font-weight: 600;
     }
     .leg-line { width: 24px; height: 3px; border-radius: 2px; }
     .leg-dashed { background: repeating-linear-gradient(90deg, var(--c) 0 8px, transparent 8px 12px); }
@@ -236,11 +254,12 @@
       text-transform: uppercase;
       color: var(--muted);
       margin-bottom: 10px;
+      font-weight: 600;
     }
     .metric-value {
       font-family: var(--mono);
       font-size: 32px;
-      font-weight: 700;
+      font-weight: 800;
       color: var(--text);
     }
     .metric-value.blue  { color: var(--blue);  }
@@ -259,6 +278,7 @@
       text-transform: uppercase;
       color: var(--muted);
       margin-bottom: 20px;
+      font-weight: 700;
     }
     .thr-row {
       display: flex; align-items: center; gap: 20px;
@@ -267,7 +287,7 @@
     .thr-row label {
       font-size: 16px; color: var(--muted);
       min-width: 70px;
-      font-weight: 500;
+      font-weight: 600;
     }
     input[type=range] {
       flex: 1;
@@ -280,6 +300,7 @@
       width: 22px; height: 22px;
       background: var(--green);
       border: 2px solid var(--surface);
+      cursor: pointer;
     }
     .thr-val {
       font-family: var(--mono);
@@ -287,7 +308,7 @@
       color: var(--green);
       min-width: 80px;
       text-align: right;
-      font-weight: 600;
+      font-weight: 700;
     }
     .recording-card {
       background: var(--card);
@@ -309,6 +330,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      font-weight: 700;
     }
     .recording-actions {
       display: flex;
@@ -324,15 +346,15 @@
       border-radius: 50px;
       font-family: var(--mono);
       font-size: 15px;
-      font-weight: 600;
+      font-weight: 700;
       border: none;
       cursor: pointer;
       transition: all 0.15s;
     }
-    .btn-rec-start { background: var(--green); color: white; }
+    .btn-rec-start { background: var(--green); color: white; box-shadow: var(--shadow); }
     .btn-rec-start:hover:not(:disabled) { background: var(--green-dim); transform: scale(1.02); }
     .btn-rec-stop { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
-    .btn-rec-stop:hover:not(:disabled) { background: #fecaca; }
+    .btn-rec-stop:hover:not(:disabled) { background: #fecaca; transform: scale(1.02); }
     .rec-status {
       font-family: var(--mono);
       font-size: 14px;
@@ -341,14 +363,14 @@
       border-radius: 50px;
       color: var(--muted);
       border: 1px solid var(--border);
-      font-weight: 500;
+      font-weight: 700;
     }
     .rec-status.recording-active {
       background: #dcfce7;
       color: #15803d;
       border-color: #86efac;
     }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
     .serial-card {
       background: var(--card-alt);
       border: 1px solid var(--border);
@@ -368,6 +390,7 @@
       letter-spacing: 1px;
       color: var(--muted);
       text-transform: uppercase;
+      font-weight: 700;
     }
     .serial-body {
       height: 140px;
@@ -378,25 +401,51 @@
       line-height: 1.9;
       background: #ffffff;
       color: #1e293b;
+      font-weight: 500;
     }
     .serial-body .serial-line { margin-bottom: 4px; }
-    .serial-line .ts { color: #64748b; font-weight: 500; }
-    .serial-line .e1c, .serial-line .e2c, .serial-line .addc, .serial-line .subc, .serial-line .thrc { font-weight: 700; }
+    .serial-line .ts { color: #64748b; font-weight: 600; }
+    .serial-line .e1c, .serial-line .e2c, .serial-line .addc, .serial-line .subc, .serial-line .thrc { font-weight: 800; }
+
+    /* IMPROVED CALIBRATION COMPLETE BUTTON */
     .btn-complete {
-      display: flex; align-items: center; gap: 12px;
-      padding: 16px 32px;
-      background: var(--green-bg);
-      border: 1.5px solid var(--green);
-      border-radius: 50px;
-      color: var(--green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 18px 36px;
+      background: linear-gradient(135deg, var(--green) 0%, #047857 100%);
+      border: none;
+      border-radius: 60px;
+      color: white;
       font-family: var(--mono);
-      font-size: 16px;
-      letter-spacing: 1px;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
       cursor: pointer;
-      align-self: flex-end;
-      font-weight: 600;
+      align-self: center;
+      transition: all 0.25s ease;
+      box-shadow: 0 8px 20px rgba(5, 150, 105, 0.25);
+      width: auto;
+      min-width: 280px;
     }
+    .btn-complete:hover {
+      transform: translateY(-3px);
+      background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+      box-shadow: 0 15px 30px rgba(5, 150, 105, 0.35);
+    }
+    .btn-complete:active {
+      transform: translateY(1px);
+    }
+    .btn-complete svg {
+      width: 24px;
+      height: 24px;
+      stroke: white;
+      stroke-width: 2;
+      fill: none;
+    }
+
     #page-done {
       flex-direction: column;
       align-items: center;
@@ -412,18 +461,20 @@
       display: flex; align-items: center; justify-content: center;
       background: var(--green-bg);
     }
-    .done-ring svg { width: 60px; height: 60px; stroke: var(--green); stroke-width: 1.5; }
+    .done-ring svg { width: 60px; height: 60px; stroke: var(--green); stroke-width: 1.8; }
     .done-title {
       font-family: var(--mono);
       font-size: 28px;
       letter-spacing: 2px;
       text-transform: uppercase;
       color: var(--green);
+      font-weight: 800;
     }
     .done-sub {
       font-size: 18px;
       color: var(--muted);
       line-height: 1.6;
+      font-weight: 500;
     }
     .done-actions {
       display: flex;
@@ -457,13 +508,12 @@
       .btn-rec { padding: 10px 18px; font-size: 14px; }
       .rec-status { font-size: 12px; }
       .serial-body { font-size: 11px; height: 120px; }
-      .btn-complete { padding: 12px 24px; font-size: 14px; align-self: center; }
+      .btn-complete { padding: 14px 24px; font-size: 16px; min-width: 240px; align-self: center; }
       .done-title { font-size: 24px; }
       .done-sub { font-size: 16px; }
       .done-actions { gap: 12px; }
       .metric { padding: 12px; }
     }
-
     @media (max-width: 480px) {
       .metrics-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
       .metric-value { font-size: 22px; }
@@ -510,7 +560,12 @@
   </div>
 
   <div class="serial-card"><div class="serial-titlebar"><span class="serial-dot" style="background:#e11d48;"></span><span class="serial-dot" style="background:#d97706;"></span><span class="serial-dot" style="background:#059669;"></span><span class="serial-name">Serial Monitor (Live Log)</span></div><div class="serial-body" id="serial-body"></div></div>
-  <button class="btn-complete" id="btn-complete"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Calibration Complete</button>
+  
+  <!-- IMPROVED CALIBRATION COMPLETE BUTTON -->
+  <button class="btn-complete" id="btn-complete">
+    <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    Calibration Complete
+  </button>
 </div>
 
 <!-- DONE PAGE -->
@@ -638,7 +693,7 @@
           options: {
             responsive: true, maintainAspectRatio: false, animation: false,
             plugins: { legend: { display: false }, tooltip: { enabled: false } },
-            scales: { x: { display: false }, y: { min: -250, max: 1350, ticks: { stepSize: 300, font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.05)' } } }
+            scales: { x: { display: false }, y: { min: -250, max: 1350, ticks: { stepSize: 300, font: { size: 11, weight: 'bold' } }, grid: { color: 'rgba(0,0,0,0.05)' } } }
           }
         });
       }
@@ -727,7 +782,7 @@
         updateRecordingUI();
       });
       if (completeBtn) completeBtn.addEventListener('click', () => {
-        if (isRecording) { alert('Please stop recording before completing.'); return; }
+        if (isRecording) { alert('Please stop recording before completing calibration.'); return; }
         stopSim();
         const doneThr = document.getElementById('done-thr');
         if (doneThr) doneThr.textContent = thrInput.value + ' µV';
@@ -745,7 +800,6 @@
       // Initialize
       updateRecordingUI();
       buildChart();
-      // start sim only if calibration page is active initially (it's hidden, but when opened it will start)
       if (document.getElementById('page-calib').classList.contains('active')) startSim();
     });
   })();
