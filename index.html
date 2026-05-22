@@ -1,811 +1,885 @@
-<!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover" />
-  <title>Andormorphic Arm — Calibration + Recording</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <!-- Distinctive Fonts: Playfair Display (headings), Lora (body), and a clean sans for UI -->
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=Lora:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=yes,viewport-fit=cover"/>
+  <title>Andormorphic Arm</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;800;900&family=Lora:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    /* ========= LIGHT THEME with sophisticated typography ========= */
-    :root {
-      --bg:        #f8fafc;
-      --surface:   #ffffff;
-      --card:      #ffffff;
-      --card-alt:  #f1f5f9;
-      --border:    #e2e8f0;
-      --border2:   #cbd5e1;
-      --green:     #059669;
-      --green-dim: #047857;
-      --green-bg:  #ecfdf5;
-      --blue:      #2563eb;
-      --teal:      #0d9488;
-      --amber:     #d97706;
-      --rose:      #e11d48;
-      --text:      #0f172a;
-      --muted:     #475569;
-      --shadow:    0 4px 12px rgba(0, 0, 0, 0.03), 0 1px 2px rgba(0, 0, 0, 0.05);
-      --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
-    }
+  :root{
+    --bg:#f8fafc;--surface:#ffffff;--card:#ffffff;--card-alt:#f1f5f9;
+    --border:#e2e8f0;--border2:#cbd5e1;
+    --green:#059669;--green-dim:#047857;--green-bg:#ecfdf5;
+    --blue:#2563eb;--teal:#0d9488;--amber:#d97706;--rose:#e11d48;
+    --purple:#7c3aed;--orange:#ea580c;
+    --text:#0f172a;--muted:#475569;
+    --shadow:0 4px 12px rgba(0,0,0,0.03),0 1px 2px rgba(0,0,0,0.05);
+    --shadow-lg:0 10px 25px -5px rgba(0,0,0,0.05),0 8px 10px -6px rgba(0,0,0,0.02);
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Lora','Times New Roman',serif;background:var(--bg);color:var(--text);
+    min-height:100vh;display:flex;flex-direction:column;font-size:18px;font-weight:500;line-height:1.5}
+  h1,h2,h3,.welcome-title,.calib-title,.done-title,.recording-title,.thr-title{
+    font-family:'Playfair Display','Georgia',serif;font-weight:700;letter-spacing:-0.01em}
+  .btn,.btn-start,.btn-ghost,.btn-rec,.rec-status,.badge,.btn-complete,.mode-pill,.metric-label,.serial-name{
+    font-family:'Inter','Segoe UI',system-ui,sans-serif;font-weight:600}
+  .metric-value,.thr-val,.serial-body,.legend-item{font-family:'JetBrains Mono','SF Mono',monospace}
+  p,.welcome-sub,.done-sub,.metric-value,.serial-line{font-family:'Lora',serif}
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;
+    border-bottom:1px solid var(--border);background:var(--surface);box-shadow:var(--shadow);flex-wrap:wrap;gap:12px}
+  .topbar-brand{display:flex;align-items:center;gap:12px}
+  .topbar-logo{width:40px;height:40px;border:2px solid var(--green);border-radius:10px;
+    display:flex;align-items:center;justify-content:center;background:var(--green-bg)}
+  .topbar-logo svg{width:22px;height:22px;stroke:var(--green);fill:none;stroke-width:2}
+  .topbar-name{font-family:'Playfair Display',serif;font-size:18px;letter-spacing:1px;
+    color:var(--text);text-transform:uppercase;font-weight:800}
+  .topbar-badges{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .badge{font-size:13px;padding:6px 12px;border-radius:6px;border:1px solid var(--border2);
+    background:var(--bg);color:var(--muted);letter-spacing:0.3px;font-weight:600;font-family:'Inter',sans-serif}
+  .ws-badge{font-size:12px;padding:5px 11px;border-radius:6px;border:1px solid var(--border2);
+    background:var(--bg);color:var(--muted);font-family:'Inter',sans-serif;font-weight:600;
+    display:flex;align-items:center;gap:6px;cursor:default;transition:all 0.2s}
+  .ws-badge.connected{background:#dcfce7;color:#15803d;border-color:#86efac}
+  .ws-badge.connecting{background:#fef9c3;color:#854d0e;border-color:#fde047}
+  .ws-badge.disconnected{background:#fee2e2;color:#b91c1c;border-color:#fca5a5}
+  .ws-dot{width:8px;height:8px;border-radius:50%;background:currentColor}
 
-    body {
-      font-family: 'Lora', 'Times New Roman', serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      font-size: 18px;
-      font-weight: 500;
-      line-height: 1.5;
-    }
+  .grip-badge{font-size:12px;padding:5px 13px;border-radius:6px;border:1px solid var(--border2);
+    background:var(--bg);color:var(--muted);font-family:'Inter',sans-serif;font-weight:700;
+    display:flex;align-items:center;gap:6px;transition:all 0.3s}
+  .grip-badge.open{background:#f0fdf4;color:#166534;border-color:#86efac}
+  .grip-badge.three{background:#fffbeb;color:#92400e;border-color:#fcd34d}
+  .grip-badge.five{background:#eff6ff;color:#1e40af;border-color:#93c5fd}
+  .grip-dot{width:8px;height:8px;border-radius:50%;background:currentColor}
 
-    /* Heading style: Playfair Display */
-    h1, h2, h3, .welcome-title, .calib-title, .done-title, .recording-title, .thr-title {
-      font-family: 'Playfair Display', 'Georgia', serif;
-      font-weight: 700;
-      letter-spacing: -0.01em;
-    }
+  .page{display:none;flex:1}
+  .page.active{display:flex}
 
-    /* UI elements / buttons / badges: clean sans (Akt style) */
-    .btn, .btn-start, .btn-ghost, .btn-rec, .rec-status, .badge, .btn-complete, .mode-pill, .metric-label, .serial-name {
-      font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
-      font-weight: 600;
-    }
+  #page-welcome{flex-direction:column;align-items:center;justify-content:center;
+    gap:32px;padding:48px 24px;text-align:center}
+  .welcome-icon{width:120px;height:120px;border-radius:50%;border:3px solid var(--green);
+    display:flex;align-items:center;justify-content:center;background:var(--surface)}
+  .welcome-icon svg{width:60px;height:60px;stroke:var(--green);stroke-width:1.8}
+  .welcome-title{font-size:42px;letter-spacing:1px;color:var(--text);font-weight:800}
+  .welcome-title span{color:var(--green)}
+  .welcome-sub{font-size:18px;color:var(--muted);max-width:520px;line-height:1.6;font-weight:500}
+  .mode-pills{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+  .mode-pill{display:flex;align-items:center;gap:10px;padding:12px 24px;border-radius:12px;
+    border:1px solid var(--border2);background:var(--card-alt);font-size:16px;color:var(--muted);font-weight:600}
+  .mode-pill svg{width:20px;height:20px;stroke:var(--green);stroke-width:2}
+  .btn-start{display:flex;align-items:center;gap:12px;padding:16px 42px;background:var(--green);
+    color:#fff;font-size:18px;letter-spacing:0.5px;border:none;border-radius:12px;cursor:pointer;
+    text-transform:uppercase;font-weight:700;transition:all 0.2s;box-shadow:var(--shadow)}
+  .btn-start:hover{background:var(--green-dim);transform:scale(1.02);box-shadow:var(--shadow-lg)}
+  .btn-start svg{width:22px;height:22px;stroke:#fff;stroke-width:2}
+  .connection-hint{font-family:'Inter',sans-serif;font-size:13px;color:var(--muted);margin-top:8px;
+    background:var(--card-alt);padding:6px 12px;border-radius:20px;display:inline-block}
 
-    /* Monospace for data values: keep JetBrains Mono for numbers */
-    .metric-value, .thr-val, .serial-body, .legend-item, .live-dot + span {
-      font-family: 'JetBrains Mono', 'SF Mono', monospace;
-    }
+  #page-calib{flex-direction:column;padding:24px 20px;gap:24px;max-width:1200px;margin:0 auto;width:100%}
+  .calib-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+  .calib-title{font-size:24px;letter-spacing:0.5px;text-transform:uppercase;color:var(--text);
+    display:flex;align-items:center;gap:12px;font-weight:800}
+  .live-dot{width:12px;height:12px;border-radius:50%;background:var(--green);animation:blink 1.2s infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+  .header-actions{display:flex;gap:12px;flex-wrap:wrap}
+  .btn-ghost{display:flex;align-items:center;gap:8px;padding:10px 18px;background:transparent;
+    border:1px solid var(--border2);border-radius:10px;color:var(--muted);font-size:15px;
+    cursor:pointer;transition:all 0.15s;font-weight:600}
+  .btn-ghost svg{width:18px;height:18px;stroke:currentColor;stroke-width:2}
+  .btn-ghost:hover{background:var(--card-alt);color:var(--text);border-color:var(--border)}
 
-    /* General body text uses Lora */
-    p, .welcome-sub, .done-sub, .thr-hint, .metric-value, .serial-line {
-      font-family: 'Lora', serif;
-    }
+  .chart-card{background:var(--card);border:1px solid var(--border);border-radius:20px;
+    padding:20px;box-shadow:var(--shadow)}
+  .legend-row{display:flex;flex-wrap:wrap;gap:20px;margin-bottom:16px}
+  .legend-item{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);font-weight:500}
+  .leg-line{width:24px;height:3px;border-radius:2px}
+  .leg-dashed{background:repeating-linear-gradient(90deg,var(--c) 0 8px,transparent 8px 12px)}
+  .chart-wrap{position:relative;width:100%;height:280px}
 
-    /* ── TOP BAR ── */
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px 24px;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface);
-      box-shadow: var(--shadow);
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-    .topbar-brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .topbar-logo {
-      width: 40px; height: 40px;
-      border: 2px solid var(--green);
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      background: var(--green-bg);
-    }
-    .topbar-logo svg { width: 22px; height: 22px; stroke: var(--green); fill: none; stroke-width: 2; }
-    .topbar-name {
-      font-family: 'Playfair Display', serif;
-      font-size: 18px;
-      letter-spacing: 1px;
-      color: var(--text);
-      text-transform: uppercase;
-      font-weight: 800;
-    }
-    .topbar-badges {
-      display: flex; gap: 10px;
-    }
-    .badge {
-      font-size: 13px;
-      padding: 6px 12px;
-      border-radius: 6px;
-      border: 1px solid var(--border2);
-      background: var(--bg);
-      color: var(--muted);
-      letter-spacing: 0.3px;
-      font-weight: 600;
-    }
+  .metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px}
+  .metric{background:var(--card);border:1px solid var(--border);border-radius:20px;
+    padding:18px;box-shadow:var(--shadow)}
+  .metric-label{font-size:13px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);
+    margin-bottom:10px;font-weight:700}
+  .metric-value{font-size:32px;font-weight:700;color:var(--text)}
+  .metric-value.blue{color:var(--blue)}
+  .metric-value.amber{color:var(--amber)}
+  .metric-value.rose{color:var(--rose)}
 
-    /* ── PAGES ── */
-    .page { display: none; flex: 1; }
-    .page.active { display: flex; }
+  /* DUAL THRESHOLD CARD */
+  .threshold-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:20px}
+  .thr-title{font-size:16px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);font-weight:800}
+  .thr-section{display:flex;flex-direction:column;gap:10px}
+  .thr-label-row{display:flex;align-items:center;gap:10px}
+  .thr-zone-badge{font-size:11px;font-family:'Inter',sans-serif;font-weight:700;
+    padding:3px 10px;border-radius:20px;letter-spacing:0.5px;text-transform:uppercase}
+  .thr-zone-low{background:#fffbeb;color:#92400e;border:1px solid #fcd34d}
+  .thr-zone-high{background:#eff6ff;color:#1e40af;border:1px solid #93c5fd}
+  .thr-row{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  .thr-row label{font-size:15px;color:var(--muted);min-width:70px;font-weight:600;font-family:'Inter',sans-serif}
+  input[type=range]{flex:1;min-width:160px;height:6px;background:var(--border2);border-radius:3px;cursor:pointer}
+  input[type=range].low-slider::-webkit-slider-thumb{width:22px;height:22px;background:#d97706;border:2px solid var(--surface);cursor:pointer;border-radius:50%;appearance:none;-webkit-appearance:none}
+  input[type=range].high-slider::-webkit-slider-thumb{width:22px;height:22px;background:#2563eb;border:2px solid var(--surface);cursor:pointer;border-radius:50%;appearance:none;-webkit-appearance:none}
+  input[type=range].low-slider::-moz-range-thumb{width:20px;height:20px;background:#d97706;border:2px solid var(--surface);border-radius:50%}
+  input[type=range].high-slider::-moz-range-thumb{width:20px;height:20px;background:#2563eb;border:2px solid var(--surface);border-radius:50%}
+  .thr-val{font-size:18px;min-width:80px;text-align:right;font-weight:700;font-family:'JetBrains Mono',monospace}
+  .thr-val.low{color:#d97706}
+  .thr-val.high{color:#2563eb}
+  .thr-warn{font-size:12px;color:var(--rose);font-family:'Inter',sans-serif;font-weight:600;
+    background:#fff1f2;border:1px solid #fecdd3;border-radius:8px;padding:6px 12px;display:none}
+  .thr-desc{font-size:13px;color:var(--muted);font-family:'Inter',sans-serif;line-height:1.6;
+    background:var(--card-alt);border-radius:10px;padding:12px 16px}
+  .thr-desc span{font-weight:700}
 
-    /* ── WELCOME PAGE ── */
-    #page-welcome {
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 32px;
-      padding: 48px 24px;
-      text-align: center;
-    }
-    .welcome-icon {
-      width: 120px; height: 120px;
-      border-radius: 50%;
-      border: 3px solid var(--green);
-      display: flex; align-items: center; justify-content: center;
-      background: var(--surface);
-    }
-    .welcome-icon svg { width: 60px; height: 60px; stroke: var(--green); stroke-width: 1.8; }
-    .welcome-title {
-      font-size: 42px;
-      letter-spacing: 1px;
-      color: var(--text);
-      font-weight: 800;
-    }
-    .welcome-title span { color: var(--green); }
-    .welcome-sub {
-      font-size: 18px;
-      color: var(--muted);
-      max-width: 480px;
-      line-height: 1.6;
-      font-weight: 500;
-    }
-    .mode-pills {
-      display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
-    }
-    .mode-pill {
-      display: flex; align-items: center; gap: 10px;
-      padding: 12px 24px;
-      border-radius: 12px;
-      border: 1px solid var(--border2);
-      background: var(--card-alt);
-      font-size: 16px;
-      color: var(--muted);
-      font-weight: 600;
-    }
-    .mode-pill svg { width: 20px; height: 20px; stroke: var(--green); stroke-width: 2; }
-    .btn-start {
-      display: flex; align-items: center; gap: 12px;
-      padding: 16px 42px;
-      background: var(--green);
-      color: #fff;
-      font-size: 18px;
-      letter-spacing: 0.5px;
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
-      text-transform: uppercase;
-      font-weight: 700;
-      transition: all 0.2s;
-      box-shadow: var(--shadow);
-    }
-    .btn-start:hover { background: var(--green-dim); transform: scale(1.02); box-shadow: var(--shadow-lg); }
-    .btn-start svg { width: 22px; height: 22px; stroke: #fff; stroke-width: 2; }
+  .recording-card{background:var(--card);border:1px solid var(--border);border-radius:20px;
+    padding:20px 24px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:20px}
+  .recording-title{font-size:16px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);
+    display:flex;align-items:center;gap:10px;font-weight:800}
+  .recording-actions{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+  .btn-rec{display:flex;align-items:center;gap:10px;padding:12px 24px;border-radius:50px;
+    font-size:15px;font-weight:700;border:none;cursor:pointer;transition:all 0.15s}
+  .btn-rec-start{background:var(--green);color:white;box-shadow:var(--shadow)}
+  .btn-rec-start:hover:not(:disabled){background:var(--green-dim);transform:scale(1.02)}
+  .btn-rec-stop{background:#fee2e2;color:#b91c1c;border:1px solid #fecaca}
+  .btn-rec-stop:hover:not(:disabled){background:#fecaca;transform:scale(1.02)}
+  .rec-status{font-size:14px;background:var(--card-alt);padding:8px 18px;border-radius:50px;
+    color:var(--muted);border:1px solid var(--border);font-weight:700}
+  .rec-status.recording-active{background:#dcfce7;color:#15803d;border-color:#86efac}
+  button:disabled{opacity:0.5;cursor:not-allowed;transform:none}
 
-    /* ── CALIB PAGE ── */
-    #page-calib {
-      flex-direction: column;
-      padding: 24px 20px;
-      gap: 24px;
-      max-width: 1200px;
-      margin: 0 auto;
-      width: 100%;
-    }
-    .calib-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 16px;
-    }
-    .calib-title {
-      font-size: 24px;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      color: var(--text);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-weight: 800;
-    }
-    .live-dot {
-      width: 12px; height: 12px; border-radius: 50%;
-      background: var(--green);
-      animation: blink 1.2s infinite;
-    }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-    .header-actions { display: flex; gap: 12px; }
-    .btn-ghost {
-      display: flex; align-items: center; gap: 8px;
-      padding: 10px 18px;
-      background: transparent;
-      border: 1px solid var(--border2);
-      border-radius: 10px;
-      color: var(--muted);
-      font-size: 15px;
-      cursor: pointer;
-      transition: all 0.15s;
-      font-weight: 600;
-    }
-    .btn-ghost svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 2; }
-    .btn-ghost:hover { background: var(--card-alt); color: var(--text); border-color: var(--border); }
-    .chart-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 20px;
-      box-shadow: var(--shadow);
-    }
-    .legend-row {
-      display: flex; flex-wrap: wrap; gap: 20px;
-      margin-bottom: 16px;
-    }
-    .legend-item {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 14px;
-      color: var(--muted);
-      font-weight: 500;
-    }
-    .leg-line { width: 24px; height: 3px; border-radius: 2px; }
-    .leg-dashed { background: repeating-linear-gradient(90deg, var(--c) 0 8px, transparent 8px 12px); }
-    .chart-wrap { position: relative; width: 100%; height: 280px; }
-    .metrics-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 16px;
-    }
-    .metric {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 18px;
-      box-shadow: var(--shadow);
-    }
-    .metric-label {
-      font-size: 13px;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 10px;
-      font-weight: 700;
-    }
-    .metric-value {
-      font-size: 32px;
-      font-weight: 700;
-      color: var(--text);
-    }
-    .metric-value.blue  { color: var(--blue);  }
-    .metric-value.amber { color: var(--amber); }
-    .metric-value.rose  { color: var(--rose);  }
-    .threshold-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 24px;
-    }
-    .thr-title {
-      font-size: 16px;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 20px;
-      font-weight: 800;
-    }
-    .thr-row {
-      display: flex; align-items: center; gap: 20px;
-      flex-wrap: wrap;
-    }
-    .thr-row label {
-      font-size: 16px;
-      color: var(--muted);
-      min-width: 70px;
-      font-weight: 600;
-      font-family: 'Inter', sans-serif;
-    }
-    input[type=range] {
-      flex: 1;
-      min-width: 160px;
-      height: 6px;
-      background: var(--border2);
-      border-radius: 3px;
-    }
-    input[type=range]::-webkit-slider-thumb {
-      width: 22px; height: 22px;
-      background: var(--green);
-      border: 2px solid var(--surface);
-      cursor: pointer;
-    }
-    .thr-val {
-      font-size: 18px;
-      color: var(--green);
-      min-width: 80px;
-      text-align: right;
-      font-weight: 700;
-    }
-    .recording-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 20px 24px;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-    }
-    .recording-title {
-      font-size: 16px;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--muted);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 800;
-    }
-    .recording-actions {
-      display: flex;
-      gap: 16px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-    .btn-rec {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 12px 24px;
-      border-radius: 50px;
-      font-size: 15px;
-      font-weight: 700;
-      border: none;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .btn-rec-start { background: var(--green); color: white; box-shadow: var(--shadow); }
-    .btn-rec-start:hover:not(:disabled) { background: var(--green-dim); transform: scale(1.02); }
-    .btn-rec-stop { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
-    .btn-rec-stop:hover:not(:disabled) { background: #fecaca; transform: scale(1.02); }
-    .rec-status {
-      font-size: 14px;
-      background: var(--card-alt);
-      padding: 8px 18px;
-      border-radius: 50px;
-      color: var(--muted);
-      border: 1px solid var(--border);
-      font-weight: 700;
-    }
-    .rec-status.recording-active {
-      background: #dcfce7;
-      color: #15803d;
-      border-color: #86efac;
-    }
-    button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-    .serial-card {
-      background: var(--card-alt);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      overflow: hidden;
-    }
-    .serial-titlebar {
-      display: flex; align-items: center; gap: 12px;
-      padding: 14px 20px;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface);
-    }
-    .serial-dot { width: 10px; height: 10px; border-radius: 50%; }
-    .serial-name {
-      font-size: 13px;
-      letter-spacing: 1px;
-      color: var(--muted);
-      text-transform: uppercase;
-      font-weight: 700;
-    }
-    .serial-body {
-      height: 140px;
-      overflow-y: auto;
-      padding: 16px 20px;
-      font-size: 13px;
-      line-height: 1.9;
-      background: #ffffff;
-      color: #1e293b;
-      font-weight: 500;
-    }
-    .serial-body .serial-line { margin-bottom: 4px; }
-    .serial-line .ts { color: #64748b; font-weight: 600; }
-    .serial-line .e1c, .serial-line .e2c, .serial-line .addc, .serial-line .subc, .serial-line .thrc { font-weight: 800; }
+  .serial-card{background:var(--card-alt);border:1px solid var(--border);border-radius:20px;overflow:hidden}
+  .serial-titlebar{display:flex;align-items:center;gap:12px;padding:14px 20px;
+    border-bottom:1px solid var(--border);background:var(--surface)}
+  .serial-dot{width:10px;height:10px;border-radius:50%}
+  .serial-name{font-size:13px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;font-weight:700}
+  .serial-body{height:140px;overflow-y:auto;padding:16px 20px;font-size:13px;line-height:1.9;
+    background:#ffffff;color:#1e293b;font-weight:500}
+  .serial-body .serial-line{margin-bottom:4px}
+  .serial-line .ts{color:#64748b;font-weight:600}
+  .serial-line .e1c,.serial-line .e2c,.serial-line .addc,.serial-line .subc{font-weight:800}
+  .serial-line .thrLc{color:#d97706;font-weight:800}
+  .serial-line .thrHc{color:#2563eb;font-weight:800}
 
-    /* IMPROVED CALIBRATION COMPLETE BUTTON */
-    .btn-complete {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 14px;
-      padding: 18px 36px;
-      background: linear-gradient(135deg, var(--green) 0%, #047857 100%);
-      border: none;
-      border-radius: 60px;
-      color: white;
-      font-family: 'Inter', sans-serif;
-      font-size: 18px;
-      font-weight: 800;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      cursor: pointer;
-      align-self: center;
-      transition: all 0.25s ease;
-      box-shadow: 0 8px 20px rgba(5, 150, 105, 0.25);
-      width: auto;
-      min-width: 280px;
-    }
-    .btn-complete:hover {
-      transform: translateY(-3px);
-      background: linear-gradient(135deg, #047857 0%, #065f46 100%);
-      box-shadow: 0 15px 30px rgba(5, 150, 105, 0.35);
-    }
-    .btn-complete:active {
-      transform: translateY(1px);
-    }
-    .btn-complete svg {
-      width: 24px;
-      height: 24px;
-      stroke: white;
-      stroke-width: 2;
-      fill: none;
-    }
+  .btn-complete{display:flex;align-items:center;justify-content:center;gap:14px;padding:18px 36px;
+    background:linear-gradient(135deg,var(--green) 0%,#047857 100%);border:none;border-radius:60px;
+    color:white;font-family:'Inter',sans-serif;font-size:18px;font-weight:800;letter-spacing:1px;
+    text-transform:uppercase;cursor:pointer;align-self:center;transition:all 0.25s ease;
+    box-shadow:0 8px 20px rgba(5,150,105,0.25);width:auto;min-width:280px}
+  .btn-complete:hover{transform:translateY(-3px);background:linear-gradient(135deg,#047857 0%,#065f46 100%);
+    box-shadow:0 15px 30px rgba(5,150,105,0.35)}
+  .btn-complete:active{transform:translateY(1px)}
+  .btn-complete svg{width:24px;height:24px;stroke:white;stroke-width:2;fill:none}
 
-    #page-done {
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 32px;
-      padding: 60px 24px;
-      text-align: center;
-    }
-    .done-ring {
-      width: 120px; height: 120px;
-      border-radius: 50%;
-      border: 3px solid var(--green);
-      display: flex; align-items: center; justify-content: center;
-      background: var(--green-bg);
-    }
-    .done-ring svg { width: 60px; height: 60px; stroke: var(--green); stroke-width: 1.8; }
-    .done-title {
-      font-size: 34px;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--green);
-      font-weight: 800;
-    }
-    .done-sub {
-      font-size: 18px;
-      color: var(--muted);
-      line-height: 1.6;
-      font-weight: 500;
-    }
-    .done-actions {
-      display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
+  #page-done{flex-direction:column;align-items:center;justify-content:center;
+    gap:32px;padding:60px 24px;text-align:center}
+  .done-ring{width:120px;height:120px;border-radius:50%;border:3px solid var(--green);
+    display:flex;align-items:center;justify-content:center;background:var(--green-bg)}
+  .done-ring svg{width:60px;height:60px;stroke:var(--green);stroke-width:1.8}
+  .done-title{font-size:34px;letter-spacing:1px;text-transform:uppercase;color:var(--green);font-weight:800}
+  .done-sub{font-size:18px;color:var(--muted);line-height:1.6;font-weight:500}
+  .done-actions{display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
+  .done-info{background:var(--card);border:1px solid var(--border);border-radius:12px;
+    padding:16px 24px;font-family:'Inter',sans-serif;font-size:14px;color:var(--muted);
+    max-width:460px;line-height:1.7}
+  .done-info strong{color:var(--green)}
+  .done-info strong.low{color:#d97706}
+  .done-info strong.high{color:#2563eb}
 
-    /* ========= MOBILE RESPONSIVE ========= */
-    @media (max-width: 700px) {
-      body { font-size: 16px; }
-      .topbar { padding: 12px 16px; }
-      .topbar-name { font-size: 16px; }
-      .badge { font-size: 10px; padding: 4px 8px; }
-      .welcome-title { font-size: 32px; }
-      .welcome-sub { font-size: 16px; }
-      .mode-pill { padding: 8px 16px; font-size: 14px; }
-      .btn-start { padding: 12px 28px; font-size: 16px; }
-      #page-calib { padding: 16px; gap: 18px; }
-      .calib-title { font-size: 20px; }
-      .btn-ghost { padding: 8px 12px; font-size: 13px; }
-      .legend-item { font-size: 11px; }
-      .chart-wrap { height: 220px; }
-      .metric-value { font-size: 26px; }
-      .metric-label { font-size: 11px; }
-      .thr-title { font-size: 14px; }
-      .thr-row label { font-size: 14px; }
-      .thr-val { font-size: 15px; }
-      .recording-card { flex-direction: column; align-items: stretch; text-align: center; }
-      .recording-actions { justify-content: center; }
-      .btn-rec { padding: 10px 18px; font-size: 14px; }
-      .rec-status { font-size: 12px; }
-      .serial-body { font-size: 11px; height: 120px; }
-      .btn-complete { padding: 14px 24px; font-size: 16px; min-width: 240px; align-self: center; }
-      .done-title { font-size: 28px; }
-      .done-sub { font-size: 16px; }
-      .done-actions { gap: 12px; }
-      .metric { padding: 12px; }
-    }
-    @media (max-width: 480px) {
-      .metrics-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
-      .metric-value { font-size: 22px; }
-    }
+  @media(max-width:700px){
+    body{font-size:16px}
+    .topbar{padding:12px 16px}
+    .topbar-name{font-size:15px}
+    .badge{font-size:10px;padding:4px 8px}
+    .welcome-title{font-size:30px}
+    .welcome-sub{font-size:15px}
+    .mode-pill{padding:8px 14px;font-size:13px}
+    .btn-start{padding:12px 28px;font-size:16px}
+    #page-calib{padding:16px;gap:18px}
+    .calib-title{font-size:19px}
+    .btn-ghost{padding:8px 12px;font-size:13px}
+    .legend-item{font-size:11px}
+    .chart-wrap{height:200px}
+    .metric-value{font-size:24px}
+    .metric-label{font-size:11px}
+    .thr-title{font-size:13px}
+    .thr-row label{font-size:13px}
+    .thr-val{font-size:14px}
+    .recording-card{flex-direction:column;align-items:stretch;text-align:center}
+    .recording-actions{justify-content:center}
+    .btn-rec{padding:10px 16px;font-size:13px}
+    .rec-status{font-size:12px}
+    .serial-body{font-size:11px;height:110px}
+    .btn-complete{padding:14px 24px;font-size:15px;min-width:220px}
+    .done-title{font-size:26px}
+    .done-sub{font-size:15px}
+  }
+  @media(max-width:480px){
+    .metrics-grid{grid-template-columns:1fr 1fr;gap:10px}
+    .metric-value{font-size:20px}
+    .metric{padding:12px}
+  }
   </style>
-</head>
-<body>
+  </head>
+  <body>
 
-<header class="topbar">
-  <div class="topbar-brand">
-    <div class="topbar-logo"><svg viewBox="0 0 24 24"><path d="M12 2L8 6H4v4l-2 2 2 2v4h4l4 4 4-4h4v-4l2-2-2-2V6h-4L12 2z"/></svg></div>
-    <span class="topbar-name">Andormorphic Arm</span>
+  <header class="topbar">
+    <div class="topbar-brand">
+      <div class="topbar-logo"><svg viewBox="0 0 24 24"><path d="M12 2L8 6H4v4l-2 2 2 2v4h4l4 4 4-4h4v-4l2-2-2-2V6h-4L12 2z"/></svg></div>
+      <span class="topbar-name">Andormorphic Arm</span>
+    </div>
+    <div class="topbar-badges">
+      <span class="badge">FOOT SWITCH</span>
+      <span class="badge">EMG CONTROL</span>
+      <span class="grip-badge open" id="grip-badge"><span class="grip-dot"></span><span id="grip-text">OPEN</span></span>
+      <span class="ws-badge disconnected" id="ws-status-badge">
+        <span class="ws-dot"></span><span id="ws-status-text">Connecting...</span>
+      </span>
+    </div>
+  </header>
+
+  <!-- WELCOME -->
+  <div id="page-welcome" class="page active">
+    <div class="welcome-icon"><svg viewBox="0 0 24 24"><path d="M18 11V6a2 2 0 00-2-2v0a2 2 0 00-2 2v0M14 10V4a2 2 0 00-2-2v0a2 2 0 00-2 2v2M10 10.5V6a2 2 0 00-2-2v0a2 2 0 00-2 2v8"/><path d="M18 11a2 2 0 114 0v3a8 8 0 01-8 8H12a8 8 0 01-8-8 2 2 0 114 0"/></svg></div>
+    <div><div class="welcome-title">Welcome to<br><span>Andormorphic Arm</span></div></div>
+    <p class="welcome-sub">EMG sensors are placed on forearm muscles to detect movement.<br>
+      A low signal activates a 3-finger grip (thumb, index, and middle finger), while a high signal activates a full 5-finger grip using toggle control.</p>
+    <div class="mode-pills">
+      <div class="mode-pill"><svg viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg>Foot switch mode</div>
+      <div class="mode-pill"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>EMG dual-grip mode</div>
+    </div>
+    <div class="connection-hint" id="welcome-conn-status">Waiting for WebSocket connection...</div>
+    <button class="btn-start" id="go-calib">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 8 16 12 12 16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      Start Calibration
+    </button>
   </div>
-  <div class="topbar-badges"><span class="badge">FOOT SWITCH</span><span class="badge">EMG CONTROL</span></div>
-</header>
 
-<!-- WELCOME -->
-<div id="page-welcome" class="page active">
-  <div class="welcome-icon"><svg viewBox="0 0 24 24"><path d="M18 11V6a2 2 0 00-2-2v0a2 2 0 00-2 2v0M14 10V4a2 2 0 00-2-2v0a2 2 0 00-2 2v2M10 10.5V6a2 2 0 00-2-2v0a2 2 0 00-2 2v8"/><path d="M18 11a2 2 0 114 0v3a8 8 0 01-8 8H12a8 8 0 01-8-8 2 2 0 114 0"/></svg></div>
-  <div><div class="welcome-title">Welcome to<br><span>Andormorphic Arm</span></div></div>
-  <p class="welcome-sub">Place EMG sensors on flexor/extensor muscles. Calibrate baseline, adjust threshold, and record live EMG data.</p>
-  <div class="mode-pills"><div class="mode-pill"><svg viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg>Foot switch mode</div><div class="mode-pill"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>EMG control mode</div></div>
-  <button class="btn-start" id="go-calib"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 8 16 12 12 16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Start Calibration</button>
-</div>
+  <!-- CALIBRATION -->
+  <div id="page-calib" class="page">
+    <div class="calib-header">
+      <div class="calib-title"><span class="live-dot"></span>EMG Calibration</div>
+      <div class="header-actions">
+        <button class="btn-ghost" id="btn-reset"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>Reset</button>
+        <button class="btn-ghost" id="btn-back"><svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Back</button>
+      </div>
+    </div>
 
-<!-- CALIBRATION PAGE -->
-<div id="page-calib" class="page">
-  <div class="calib-header">
-    <div class="calib-title"><span class="live-dot"></span>EMG Calibration</div>
-    <div class="header-actions"><button class="btn-ghost" id="btn-reset"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>Reset</button><button class="btn-ghost" id="btn-back"><svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Back</button></div>
+    <!-- CHART -->
+    <div class="chart-card">
+      <div class="legend-row">
+        <div class="legend-item"><span class="leg-line" style="background:#2563eb;"></span>EMG 1</div>
+        <div class="legend-item"><span class="leg-line" style="background:#0d9488;"></span>EMG 2</div>
+        <div class="legend-item"><span class="leg-line leg-dashed" style="--c:#d97706;"></span>Add (1+2)</div>
+        <div class="legend-item"><span class="leg-line leg-dashed" style="--c:#e11d48;"></span>Sub (1−2)</div>
+        <div class="legend-item"><span class="leg-line leg-dashed" style="--c:#d97706;height:2px;"></span>Thr LOW</div>
+        <div class="legend-item"><span class="leg-line leg-dashed" style="--c:#2563eb;height:2px;"></span>Thr HIGH</div>
+      </div>
+      <div class="chart-wrap"><canvas id="emg-canvas"></canvas></div>
+    </div>
+
+    <!-- METRICS -->
+    <div class="metrics-grid">
+      <div class="metric"><div class="metric-label">EMG 1 (raw)</div><div class="metric-value blue" id="v-e1">—</div></div>
+      <div class="metric"><div class="metric-label">EMG 2 (raw)</div><div class="metric-value" style="color:var(--teal)" id="v-e2">—</div></div>
+      <div class="metric"><div class="metric-label">Add</div><div class="metric-value amber" id="v-add">—</div></div>
+      <div class="metric"><div class="metric-label">Sub</div><div class="metric-value rose" id="v-sub">—</div></div>
+      <div class="metric"><div class="metric-label">Peak EMG 1</div><div class="metric-value blue" id="v-pk1">0</div></div>
+      <div class="metric"><div class="metric-label">Peak EMG 2</div><div class="metric-value" style="color:var(--teal)" id="v-pk2">0</div></div>
+    </div>
+
+    <!-- DUAL THRESHOLD -->
+    <div class="threshold-card">
+      <div class="thr-title">Dual Threshold</div>
+
+      <div class="thr-section">
+        <div class="thr-label-row">
+          <span class="thr-zone-badge thr-zone-low">LOW — 3-Finger</span>
+        </div>
+        <div class="thr-row">
+          <label for="thr-low">Value</label>
+          <input type="range" id="thr-low" class="low-slider" min="0" max="8190" value="80" step="1">
+          <span class="thr-val low" id="thr-low-out">80</span>
+        </div>
+      </div>
+
+      <div class="thr-section">
+        <div class="thr-label-row">
+          <span class="thr-zone-badge thr-zone-high">HIGH — 5-Finger</span>
+        </div>
+        <div class="thr-row">
+          <label for="thr-high">Value</label>
+          <input type="range" id="thr-high" class="high-slider" min="0" max="8190" value="200" step="1">
+          <span class="thr-val high" id="thr-high-out">200</span>
+        </div>
+      </div>
+
+      <div class="thr-warn" id="thr-warn">⚠ LOW threshold must be less than HIGH threshold</div>
+
+      <div class="thr-desc" style="padding:12px; border-radius:10px; background:#f8fafc;">
+
+        <div style="margin-bottom:10px;">
+          <span style="color:#d97706; font-weight:bold;">🟠 LOW level</span><br>
+          Small muscle movement → Hand move with <b>3 fingers</b> [index, middle, thumb]
+        </div>
+
+        <div>
+          <span style="color:#2563eb; font-weight:bold;">🔵 HIGH level</span><br>
+          Strong muscle movement → Hand move with <b>all 5 fingers</b>
+        </div>
+
+      </div>
+
+    <!-- RECORDING -->
+    <div class="recording-card">
+      <div class="recording-title"><span>&#x1F4BF; DATA RECORDER</span></div>
+      <div class="recording-actions">
+        <button id="rec-start-btn" class="btn-rec btn-rec-start">&#x23FA; Start Recording</button>
+        <button id="rec-stop-btn" class="btn-rec btn-rec-stop" disabled>&#x23F9;&#xFE0F; Stop &amp; Save</button>
+        <span id="rec-status-badge" class="rec-status">&#x26AA; Idle &middot; 0 samples</span>
+      </div>
+    </div>
+
+    <!-- SERIAL MONITOR -->
+    <div class="serial-card">
+      <div class="serial-titlebar">
+        <span class="serial-dot" style="background:#e11d48;"></span>
+        <span class="serial-dot" style="background:#d97706;"></span>
+        <span class="serial-dot" style="background:#059669;"></span>
+        <span class="serial-name">Serial Monitor (Live Log)</span>
+      </div>
+      <div class="serial-body" id="serial-body"></div>
+    </div>
+
+    <button class="btn-complete" id="btn-complete">
+      <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      Calibration Complete
+    </button>
   </div>
-  <div class="chart-card"><div class="legend-row"><div class="legend-item"><span class="leg-line" style="background:#2563eb;"></span> EMG 1</div><div class="legend-item"><span class="leg-line" style="background:#0d9488;"></span> EMG 2</div><div class="legend-item"><span class="leg-line leg-dashed" style="--c:#d97706;"></span> Add (1+2)</div><div class="legend-item"><span class="leg-line leg-dashed" style="--c:#e11d48;"></span> Sub (1−2)</div><div class="legend-item"><span class="leg-line leg-dashed" style="--c:#059669;"></span> Threshold</div></div><div class="chart-wrap"><canvas id="emg-canvas"></canvas></div></div>
-  <div class="metrics-grid"><div class="metric"><div class="metric-label">EMG 1 (µV)</div><div class="metric-value blue" id="v-e1">—</div></div><div class="metric"><div class="metric-label">EMG 2 (µV)</div><div class="metric-value" style="color:var(--teal)" id="v-e2">—</div></div><div class="metric"><div class="metric-label">Add (µV)</div><div class="metric-value amber" id="v-add">—</div></div><div class="metric"><div class="metric-label">Sub (µV)</div><div class="metric-value rose" id="v-sub">—</div></div><div class="metric"><div class="metric-label">Peak EMG 1</div><div class="metric-value blue" id="v-pk1">0</div></div><div class="metric"><div class="metric-label">Peak EMG 2</div><div class="metric-value" style="color:var(--teal)" id="v-pk2">0</div></div></div>
-  <div class="threshold-card"><div class="thr-title">Threshold</div><div class="thr-row"><label for="thr-inp">Value</label><input type="range" id="thr-inp" min="0" max="1200" value="500" step="1"><span class="thr-val" id="thr-out">500 µV</span></div></div>
 
-  <!-- RECORDING PANEL - FULLY FUNCTIONAL -->
-  <div class="recording-card">
-    <div class="recording-title"><span>📀 DATA RECORDER</span></div>
-    <div class="recording-actions">
-      <button id="rec-start-btn" class="btn-rec btn-rec-start">⏺ Start Recording</button>
-      <button id="rec-stop-btn" class="btn-rec btn-rec-stop" disabled>⏹️ Stop & Save</button>
-      <span id="rec-status-badge" class="rec-status">⚪ Idle · 0 samples</span>
+  <!-- DONE -->
+  <div id="page-done" class="page">
+    <div class="done-ring"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+    <div class="done-title">Calibration Saved</div>
+    <p class="done-sub">Thresholds locked — the arm is ready for dual-grip EMG control.</p>
+    <div class="done-info" id="done-esp-info" style="display:none;">
+      ✅ Sent to ESP32 — LOW: <strong class="low" id="done-thr-low-esp">—</strong> &nbsp;|&nbsp; HIGH: <strong class="high" id="done-thr-high-esp">—</strong><br>
+      Mode 2 (EMG) now uses both thresholds for peak-triggered grip toggling.
+    </div>
+    <div class="done-info" id="done-sim-info" style="display:none;">
+      ℹ️ Not connected to ESP32 — reconnect to push thresholds.
+    </div>
+    <div class="done-actions">
+      <button class="btn-ghost" id="btn-recalib"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>Re-calibrate</button>
+      <button class="btn-start" id="btn-home"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button>
     </div>
   </div>
 
-  <div class="serial-card"><div class="serial-titlebar"><span class="serial-dot" style="background:#e11d48;"></span><span class="serial-dot" style="background:#d97706;"></span><span class="serial-dot" style="background:#059669;"></span><span class="serial-name">Serial Monitor (Live Log)</span></div><div class="serial-body" id="serial-body"></div></div>
-  
-  <button class="btn-complete" id="btn-complete">
-    <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-    Calibration Complete
-  </button>
-</div>
+  <script>
+  (function(){
+  document.addEventListener('DOMContentLoaded',function(){
 
-<!-- DONE PAGE -->
-<div id="page-done" class="page"><div class="done-ring"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div><div class="done-title">Calibration Saved</div><p class="done-sub">Threshold locked at <strong id="done-thr">—</strong>.<br>The arm is ready for EMG control mode.</p><div class="done-actions"><button class="btn-ghost" id="btn-recalib"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>Re-calibrate</button><button class="btn-start" id="btn-home"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</button></div></div>
+    const $=id=>document.getElementById(id);
+    const startRecBtn   =$('rec-start-btn');
+    const stopRecBtn    =$('rec-stop-btn');
+    const recStatusSpan =$('rec-status-badge');
+    const thrLowInput   =$('thr-low');
+    const thrHighInput  =$('thr-high');
+    const thrLowOut     =$('thr-low-out');
+    const thrHighOut    =$('thr-high-out');
+    const thrWarn       =$('thr-warn');
+    const serialBody    =$('serial-body');
+    const wsBadge       =$('ws-status-badge');
+    const wsStatusText  =$('ws-status-text');
+    const welcomeConnStatus=$('welcome-conn-status');
+    const gripBadge     =$('grip-badge');
+    const gripText      =$('grip-text');
 
-<script>
-  (function() {
-    document.addEventListener('DOMContentLoaded', function() {
-      // DOM references
-      const startRecBtn = document.getElementById('rec-start-btn');
-      const stopRecBtn = document.getElementById('rec-stop-btn');
-      const recStatusSpan = document.getElementById('rec-status-badge');
-      const thrInput = document.getElementById('thr-inp');
-      const thrOut = document.getElementById('thr-out');
-      const resetBtn = document.getElementById('btn-reset');
-      const backBtn = document.getElementById('btn-back');
-      const goCalib = document.getElementById('go-calib');
-      const completeBtn = document.getElementById('btn-complete');
-      const recalibBtn = document.getElementById('btn-recalib');
-      const homeBtn = document.getElementById('btn-home');
-      const serialBody = document.getElementById('serial-body');
-      const v_e1 = document.getElementById('v-e1');
-      const v_e2 = document.getElementById('v-e2');
-      const v_add = document.getElementById('v-add');
-      const v_sub = document.getElementById('v-sub');
-      const v_pk1 = document.getElementById('v-pk1');
-      const v_pk2 = document.getElementById('v-pk2');
+    const POINTS=120;
+    let e1Raw=new Array(POINTS).fill(0), e2Raw=new Array(POINTS).fill(0);
+    let addRaw=new Array(POINTS).fill(0), subRaw=new Array(POINTS).fill(0);
+    let e1Arr=new Array(POINTS).fill(0), e2Arr=new Array(POINTS).fill(0);
+    let addArr=new Array(POINTS).fill(0), subArr=new Array(POINTS).fill(0);
+    let pk1=0, pk2=0, serialBuf=[];
+    let isRecording=false, recordedData=[];
+    let ws=null, wsConnected=false;
+    let canvas=$('emg-canvas'), ctx=null, animationFrame=null, pendingRedraw=false;
 
-      // Simulation variables
-      const POINTS = 120;
-      let e1Arr = new Array(POINTS).fill(0);
-      let e2Arr = new Array(POINTS).fill(0);
-      let addArr = new Array(POINTS).fill(0);
-      let subArr = new Array(POINTS).fill(0);
-      let pk1 = 0, pk2 = 0, t = 0, n1 = 0, n2 = 0;
-      let simInt = null;
-      let chart = null;
-      let serialLinesBuffer = [];
+    /* =====================================================
+       SIMULATION ENGINE
+       EMG 1 (Flexor — blue):
+         · Higher baseline noise (forearm flexor, always slightly active)
+         · Strong, tall peaks (800–1100) — fires every 2–5 s
+         · Sharp decay: fast twitch fibre character (drops quickly)
+         · Occasional small sub-threshold tremor bursts
 
-      // Recording state
-      let isRecording = false;
-      let recordedData = [];
+       EMG 2 (Extensor — teal):
+         · Lower, quieter baseline (extensor is less dominant)
+         · Moderate peaks (150–550) with occasional spikes to ~900
+         · Slower decay: more sustained contraction feel
+         · Fires more frequently but with lower amplitude (2–4 s cadence)
+    ===================================================== */
+    const SIM = {
+      TICK_MS: 60,
 
-      function downloadCSV(dataRows, filename) {
-        if (!dataRows.length) return false;
-        const headers = ['Timestamp (ISO)', 'EMG1 (µV)', 'EMG2 (µV)', 'Add (µV)', 'Sub (µV)', 'Threshold (µV)'];
-        const csvRows = [headers.join(',')];
-        for (const row of dataRows) {
-          csvRows.push(`"${row.timestampISO}",${row.e1},${row.e2},${row.add},${row.sub},${row.thr}`);
+      // Per-channel profile — each field tuned independently
+      ch: [
+        {
+          // ── EMG 1 : Flexor (blue) ──────────────────────────
+          noiseFloor:   22,    // higher resting activity
+          noiseAmp:     18,    // wider noise band
+          peakAmpMin:   750,   // strong peaks
+          peakAmpMax:   1100,
+          highProbability: 0.55,   // more likely to be HIGH-zone peaks
+          decayTicksMin:  6,   // fast decay (sharp spikes)
+          decayTicksMax:  12,
+          intervalMinMs: 2000, // fires every 2–5 s
+          intervalMaxMs: 5000,
+          // tremor: occasional low-amp wobble between peaks
+          tremorAmp:    35,
+          tremorChance: 0.08,  // 8% per tick
+          // state
+          value: 20, peakCountdown: 0, peakDecay: 0, peakDecayRate: 0
+        },
+        {
+          // ── EMG 2 : Extensor (teal) ───────────────────────
+          noiseFloor:   10,    // quieter at rest
+          noiseAmp:     8,     // tighter noise band
+          peakAmpMin:   150,   // mostly moderate peaks
+          peakAmpMax:   600,
+          highProbability: 0.20,  // rarely fires HIGH — mainly LOW zone
+          decayTicksMin:  14,  // slow decay (sustained contraction)
+          decayTicksMax:  28,
+          intervalMinMs: 1800, // fires more often but smaller
+          intervalMaxMs: 4000,
+          tremorAmp:    12,
+          tremorChance: 0.03,
+          // state
+          value: 10, peakCountdown: 0, peakDecay: 0, peakDecayRate: 0
         }
-        const blob = new Blob(["\uFEFF" + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.href = url;
-        link.setAttribute('download', filename);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+      ],
+
+      schedulePeak(ch) {
+        const minT = Math.round(ch.intervalMinMs / this.TICK_MS);
+        const maxT = Math.round(ch.intervalMaxMs / this.TICK_MS);
+        ch.peakCountdown = minT + Math.floor(Math.random() * (maxT - minT));
+      },
+
+      firePeak(ch) {
+        const isHigh = Math.random() < ch.highProbability;
+        let amplitude;
+        if (isHigh) {
+          // HIGH-zone peak: always at least 700 so it clears thrHigh
+          amplitude = Math.max(700, ch.peakAmpMin + Math.random() * (ch.peakAmpMax - ch.peakAmpMin));
+        } else {
+          // LOW-zone peak: stays below 650 (comfortably in low band)
+          const lo = ch.peakAmpMin;
+          const hi = Math.min(ch.peakAmpMax, 650);
+          amplitude = lo + Math.random() * (hi - lo);
+        }
+        const decayTicks = ch.decayTicksMin + Math.random() * (ch.decayTicksMax - ch.decayTicksMin);
+        ch.peakDecay     = amplitude;
+        ch.peakDecayRate = Math.pow(0.05, 1 / decayTicks);
+      },
+
+      sample(ch) {
+        ch.peakCountdown--;
+        if (ch.peakCountdown <= 0) {
+          this.firePeak(ch);
+          this.schedulePeak(ch);
+        }
+
+        // Baseline noise
+        let noise = ch.noiseFloor + (Math.random() - 0.5) * ch.noiseAmp * 2;
+
+        // Optional tremor burst (independent of peak)
+        if (Math.random() < ch.tremorChance) {
+          noise += (Math.random() * ch.tremorAmp);
+        }
+
+        // Exponential peak decay
+        const peakContrib = ch.peakDecay;
+        if (ch.peakDecay > 0.5) {
+          ch.peakDecay *= ch.peakDecayRate;
+        } else {
+          ch.peakDecay = 0;
+        }
+
+        ch.value = Math.round(Math.max(0, Math.min(8190, noise + peakContrib)));
+        return ch.value;
+      },
+
+      init() {
+        // Stagger so channels never fire together at startup
+        this.schedulePeak(this.ch[0]);
+        this.ch[0].peakCountdown = Math.floor(this.ch[0].peakCountdown * 0.3);
+
+        this.schedulePeak(this.ch[1]);
+        this.ch[1].peakCountdown = Math.floor(this.ch[1].peakCountdown * 0.65);
+      }
+    };
+
+    /* =====================================================
+       GRIP STATE MACHINE
+       Mirrors the ESP32 logic: peak-triggered toggle.
+       - Below thrLow  → OPEN
+       - thrLow to thrHigh (exclusive) peak → toggle 3-finger
+       - Above thrHigh peak → toggle 5-finger
+    ===================================================== */
+    const GripSM = {
+      state: 'open',   // 'open' | 'three' | 'five'
+      wasAboveLow:  false,
+      wasAboveHigh: false,
+
+      update(e1, e2) {
+        const signal = Math.max(e1, e2);
+        const thrLow  = getThrLow();
+        const thrHigh = getThrHigh();
+
+        // Rising-edge detection for HIGH threshold
+        if (signal >= thrHigh && !this.wasAboveHigh) {
+          this.wasAboveHigh = true;
+          this.state = this.state === 'five' ? 'open' : 'five';
+        } else if (signal < thrHigh) {
+          this.wasAboveHigh = false;
+        }
+
+        // Rising-edge detection for LOW threshold (only if not in HIGH zone)
+        if (signal >= thrLow && signal < thrHigh && !this.wasAboveLow) {
+          this.wasAboveLow = true;
+          this.state = this.state === 'three' ? 'open' : 'three';
+        } else if (signal < thrLow) {
+          this.wasAboveLow = false;
+        }
+
+        return this.state;
+      },
+
+      reset() {
+        this.state = 'open';
+        this.wasAboveLow  = false;
+        this.wasAboveHigh = false;
+      }
+    };
+
+    /* =====================================================
+       SIMULATION TICK — replaces WebSocket data feed
+    ===================================================== */
+    let simInterval = null;
+
+    function startSimulation() {
+      SIM.init();
+      simInterval = setInterval(() => {
+        const e1 = SIM.sample(SIM.ch[0]);
+        const e2 = SIM.sample(SIM.ch[1]);
+        const grip = GripSM.update(e1, e2);
+        ingestEMG(e1, e2);
+        updateGripBadge(grip === 'three' ? 'three' : grip === 'five' ? 'five' : 'open');
+      }, SIM.TICK_MS);
+    }
+
+    function stopSimulation() {
+      if (simInterval) { clearInterval(simInterval); simInterval = null; }
+    }
+
+    /* =====================================================
+       REST OF THE ORIGINAL LOGIC (unchanged)
+    ===================================================== */
+
+    function smoothArray(arr,w=2){
+      return arr.map((_,i)=>{
+        let s=0,c=0;
+        for(let j=Math.max(0,i-w);j<=Math.min(arr.length-1,i+w);j++){s+=arr[j];c++;}
+        return s/c;
+      });
+    }
+    function updateSmoothed(){
+      e1Arr=smoothArray(e1Raw); e2Arr=smoothArray(e2Raw);
+      addArr=smoothArray(addRaw); subArr=smoothArray(subRaw);
+    }
+
+    function getThrLow(){return +thrLowInput.value;}
+    function getThrHigh(){return +thrHighInput.value;}
+    function validateThresholds(){
+      const ok = getThrLow() < getThrHigh();
+      thrWarn.style.display = ok ? 'none' : 'block';
+      return ok;
+    }
+    thrLowInput.addEventListener('input',()=>{
+      thrLowOut.textContent=getThrLow();
+      validateThresholds();
+      scheduleRedraw();
+    });
+    thrHighInput.addEventListener('input',()=>{
+      thrHighOut.textContent=getThrHigh();
+      validateThresholds();
+      scheduleRedraw();
+    });
+
+    function updateGripBadge(state){
+      gripBadge.className='grip-badge '+state;
+      if(state==='open') gripText.textContent='OPEN';
+      else if(state==='three') gripText.textContent='3-FINGER';
+      else gripText.textContent='5-FINGER';
+    }
+
+    function resizeCanvasAndDraw(){
+      if(!canvas||!ctx) return;
+      const r=canvas.parentElement.getBoundingClientRect();
+      const w=r.width, h=r.height, dpr=window.devicePixelRatio||1;
+      if(w>0&&h>0&&(canvas.width!==w*dpr||canvas.height!==h*dpr)){
+        canvas.width=w*dpr; canvas.height=h*dpr;
+        canvas.style.width=`${w}px`; canvas.style.height=`${h}px`;
+        ctx.setTransform(1,0,0,1,0,0); ctx.scale(dpr,dpr);
+      }
+      if(w>0&&h>0) drawFullChart(w,h);
+    }
+    /* Dynamic Y scale — smoothly tracks the rolling maximum of all visible data */
+    let yScaleTarget = 300;   // initial display range
+    let yScaleCurrent = 300;  // smoothed current range (lerped each frame)
+
+    function computeDynamicMaxY(){
+      // Find the max across all four data arrays + thresholds
+      let dataMax = 0;
+      [e1Arr, e2Arr, addArr, subArr].forEach(arr=>{
+        arr.forEach(v=>{ if(v > dataMax) dataMax = v; });
+      });
+      dataMax = Math.max(dataMax, getThrHigh(), getThrLow());
+
+      // Target = data max + 15% headroom, minimum 200 so axis never collapses
+      yScaleTarget = Math.max(200, dataMax * 1.15);
+
+      // Lerp current toward target — fast expand (0.25), slow shrink (0.03)
+      // so the axis jumps up quickly on a peak but eases down gradually
+      const speed = yScaleCurrent < yScaleTarget ? 0.25 : 0.03;
+      yScaleCurrent += (yScaleTarget - yScaleCurrent) * speed;
+
+      return yScaleCurrent;
+    }
+
+    function drawGrid(ctx,w,h,maxY){
+      ctx.save(); ctx.strokeStyle='#e2e8f0'; ctx.lineWidth=1;
+      for(let i=0;i<=5;i++){
+        const y=h-(i/5)*h;
+        ctx.beginPath(); ctx.moveTo(40,y+0.5); ctx.lineTo(w,y+0.5); ctx.stroke();
+        ctx.fillStyle='#64748b'; ctx.font="10px 'Inter',sans-serif";
+        ctx.fillText(Math.round((i/5)*maxY),5,y-2);
+      }
+      ctx.beginPath(); ctx.moveTo(40,0); ctx.lineTo(40,h); ctx.lineTo(w,h);
+      ctx.strokeStyle='#cbd5e1'; ctx.lineWidth=1.5; ctx.stroke(); ctx.restore();
+    }
+    function drawDataset(ctx,data,color,lw,dashed,dash,w,h,maxY){
+      if(!ctx||data.length<2) return;
+      const step=(w-40)/(POINTS-1);
+      ctx.save(); ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=lw;
+      ctx.lineCap='round'; ctx.lineJoin='round';
+      ctx.setLineDash(dashed&&dash?dash:[]);
+      data.forEach((v,i)=>{
+        const x=40+i*step, y=h-(v/maxY)*h;
+        i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+      });
+      ctx.stroke(); ctx.restore();
+    }
+    function drawFullChart(w,h){
+      if(!canvas||!ctx) return;
+      const maxY = computeDynamicMaxY();
+      ctx.clearRect(0,0,w,h);
+      drawGrid(ctx,w,h,maxY);
+      drawDataset(ctx,e1Arr,'#2563eb',2.5,false,null,w,h,maxY);
+      drawDataset(ctx,e2Arr,'#0d9488',2.5,false,null,w,h,maxY);
+      drawDataset(ctx,addArr,'#d97706',2,true,[6,4],w,h,maxY);
+      drawDataset(ctx,subArr,'#e11d48',2,true,[2,4],w,h,maxY);
+      drawDataset(ctx,new Array(POINTS).fill(getThrLow()),'#d97706',2,true,[4,4],w,h,maxY);
+      drawDataset(ctx,new Array(POINTS).fill(getThrHigh()),'#2563eb',2,true,[4,4],w,h,maxY);
+    }
+    function scheduleRedraw(){
+      if(pendingRedraw) return;
+      pendingRedraw=true;
+      if(animationFrame) cancelAnimationFrame(animationFrame);
+      animationFrame=requestAnimationFrame(()=>{
+        pendingRedraw=false;
+        const r=canvas.parentElement.getBoundingClientRect();
+        if(r.width>0&&r.height>0) drawFullChart(r.width,r.height);
+      });
+    }
+
+    /* WebSocket: attempt connection but gracefully fall back to simulation */
+    function setWsBadge(state,text){
+      wsBadge.className='ws-badge '+state;
+      wsStatusText.textContent=text;
+      if(welcomeConnStatus){
+        if(state==='connected') welcomeConnStatus.textContent='✓ Connected to ESP32 - Live sensor data active';
+        else if(state==='connecting') welcomeConnStatus.textContent='Connecting to ESP32...';
+        else welcomeConnStatus.textContent='⚠ Disconnected — running simulation mode';
+      }
+    }
+    function connectWS(){
+      if(ws){try{ws.close();}catch(e){} ws=null;}
+      setWsBadge('connecting','Connecting...');
+      try{ws=new WebSocket('ws://'+window.location.hostname+':81');}
+      catch(e){
+        setWsBadge('disconnected','Simulation');
+        startSimulation();
+        return;
+      }
+
+      // Give it 2.5 s to connect; if it doesn't, drop into simulation
+      const timeout = setTimeout(()=>{
+        if(!wsConnected){
+          try{ws.close();}catch(e){}
+          ws=null;
+          setWsBadge('disconnected','Simulation');
+          startSimulation();
+        }
+      }, 2500);
+
+      ws.onopen=()=>{
+        clearTimeout(timeout);
+        wsConnected=true;
+        stopSimulation();   // real data takes over
+        setWsBadge('connected','Live Data');
+      };
+      ws.onmessage=evt=>{
+        try{
+          const msg=JSON.parse(evt.data);
+          if(msg.type==='emg'){
+            ingestEMG(msg.e1,msg.e2);
+            if(msg.grip!==undefined) updateGripBadge(msg.grip==='3'?'three':msg.grip==='5'?'five':'open');
+          } else if(msg.type==='thresholdAck'){
+            console.log('ESP32 thr confirmed: LOW=',msg.low,'HIGH=',msg.high);
+          }
+        }catch(e){}
+      };
+      ws.onerror=()=>{
+        clearTimeout(timeout);
+        wsConnected=false;
+        setWsBadge('disconnected','Simulation');
+        startSimulation();
+      };
+      ws.onclose=()=>{
+        if(wsConnected){
+          wsConnected=false;
+          setWsBadge('disconnected','Simulation');
+          startSimulation();   // resume sim if ESP32 disconnects
+        }
+      };
+    }
+    function sendThresholdsToESP(low,high){
+      if(ws&&wsConnected&&ws.readyState===WebSocket.OPEN){
+        ws.send(JSON.stringify({type:'setThreshold',low,high}));
         return true;
       }
+      return false;
+    }
 
-      function updateRecordingUI() {
-        if (!startRecBtn || !stopRecBtn || !recStatusSpan) return;
-        if (isRecording) {
-          startRecBtn.disabled = true;
-          stopRecBtn.disabled = false;
-          recStatusSpan.innerHTML = `🔴 RECORDING · ${recordedData.length} samples`;
-          recStatusSpan.classList.add('recording-active');
-        } else {
-          startRecBtn.disabled = false;
-          stopRecBtn.disabled = true;
-          if (recordedData.length > 0) {
-            recStatusSpan.innerHTML = `⚪ Stopped · ${recordedData.length} samples (click Stop & Save)`;
-          } else {
-            recStatusSpan.innerHTML = `⚪ Idle · 0 samples`;
-          }
-          recStatusSpan.classList.remove('recording-active');
-        }
+    /* ---------- INGEST EMG (unchanged) ---------- */
+    function ingestEMG(e1,e2){
+      const add=e1+e2, sub=e1-e2;
+      e1Raw.push(e1);e1Raw.shift(); e2Raw.push(e2);e2Raw.shift();
+      addRaw.push(add);addRaw.shift(); subRaw.push(sub);subRaw.shift();
+      updateSmoothed();
+      if(e1>pk1) pk1=e1; if(e2>pk2) pk2=e2;
+      $('v-e1').textContent=e1; $('v-e2').textContent=e2;
+      $('v-add').textContent=add; $('v-sub').textContent=sub;
+      $('v-pk1').textContent=pk1; $('v-pk2').textContent=pk2;
+      if(isRecording){
+        recordedData.push({timestampISO:new Date().toISOString(),e1,e2,add,sub,
+          thrLow:getThrLow(),thrHigh:getThrHigh()});
+        recStatusSpan.innerHTML='\uD83D\uDD34 RECORDING \u00B7 '+recordedData.length+' samples';
       }
+      scheduleRedraw();
+      const ts=new Date().toLocaleTimeString('en-US',{hour12:false});
+      serialBuf.push({ts,e1,e2,add,sub,tL:getThrLow(),tH:getThrHigh()});
+      if(serialBuf.length>70) serialBuf.shift();
+      serialBody.innerHTML=serialBuf.slice(-14).map(l=>
+        `<div class="serial-line"><span class="ts">[${l.ts}]</span> E1:<span class="e1c">${l.e1}</span> E2:<span class="e2c">${l.e2}</span> ADD:<span class="addc">${l.add}</span> SUB:<span class="subc">${l.sub}</span> TL:<span class="thrLc">${l.tL}</span> TH:<span class="thrHc">${l.tH}</span></div>`
+      ).join('');
+      serialBody.scrollTop=serialBody.scrollHeight;
+    }
 
-      function startRecording() {
-        if (isRecording) return;
-        recordedData = [];
-        isRecording = true;
-        updateRecordingUI();
+    /* ---------- RECORDING (unchanged) ---------- */
+    function downloadCSV(rows,fn){
+      if(!rows.length) return false;
+      const hdr=['Timestamp (ISO)','EMG1','EMG2','Add','Sub','Thr LOW','Thr HIGH'];
+      const csv=[hdr.join(',')];
+      rows.forEach(r=>csv.push(`"${r.timestampISO}",${r.e1},${r.e2},${r.add},${r.sub},${r.thrLow},${r.thrHigh}`));
+      const blob=new Blob(['\uFEFF'+csv.join('\n')],{type:'text/csv;charset=utf-8;'});
+      const a=document.createElement('a');
+      a.href=URL.createObjectURL(blob); a.download=fn;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      return true;
+    }
+    function updateRecordingUI(){
+      if(isRecording){
+        startRecBtn.disabled=true; stopRecBtn.disabled=false;
+        recStatusSpan.innerHTML='\uD83D\uDD34 RECORDING \u00B7 '+recordedData.length+' samples';
+        recStatusSpan.classList.add('recording-active');
+      } else {
+        startRecBtn.disabled=false; stopRecBtn.disabled=true;
+        recStatusSpan.innerHTML=recordedData.length>0
+          ?'\u26AA Stopped \u00B7 '+recordedData.length+' samples'
+          :'\u26AA Idle \u00B7 0 samples';
+        recStatusSpan.classList.remove('recording-active');
       }
+    }
 
-      function stopAndSaveRecording() {
-        if (isRecording) isRecording = false;
-        if (recordedData.length === 0) {
-          alert('No data recorded. Please click "Start Recording" and wait for EMG signals.');
-          updateRecordingUI();
-          return;
-        }
-        const now = new Date();
-        const filename = `emg_recording_${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}_${now.getHours()}-${now.getMinutes()}-${now.getSeconds()}.csv`;
-        const success = downloadCSV(recordedData, filename);
-        if (success) {
-          const savedCount = recordedData.length;
-          recordedData = [];
-          alert(`✅ Recording saved! ${savedCount} samples exported as CSV.`);
-        } else {
-          alert('Failed to save recording.');
-        }
-        updateRecordingUI();
-      }
+    /* ---------- PAGE NAV (unchanged) ---------- */
+    function showPage(id){
+      if(id!=='page-calib'&&isRecording){alert('Recording is active. Stop & Save first.');return;}
+      ['page-welcome','page-calib','page-done'].forEach(p=>$(p).classList.remove('active'));
+      $(id).classList.add('active');
+      if(id==='page-calib') setTimeout(()=>resizeCanvasAndDraw(),50);
+    }
+    function completeCalibration(){
+      if(isRecording){alert('Please stop recording before completing calibration.');return;}
+      if(!validateThresholds()){alert('LOW threshold must be less than HIGH threshold.');return;}
+      const low=getThrLow(), high=getThrHigh();
+      const sent=sendThresholdsToESP(low,high);
+      $('done-thr-low-esp').textContent=low;
+      $('done-thr-high-esp').textContent=high;
+      $('done-esp-info').style.display=sent?'block':'none';
+      $('done-sim-info').style.display=sent?'none':'block';
+      showPage('page-done');
+    }
 
-      function buildChart() {
-        if (chart) chart.destroy();
-        const thr = +thrInput.value;
-        const ctx = document.getElementById('emg-canvas').getContext('2d');
-        chart = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels: new Array(POINTS).fill(''),
-            datasets: [
-              { label:'EMG 1', data:[...e1Arr], borderColor:'#2563eb', borderWidth:2, pointRadius:0, tension:0.35, fill:false },
-              { label:'EMG 2', data:[...e2Arr], borderColor:'#0d9488', borderWidth:2, pointRadius:0, tension:0.35, fill:false },
-              { label:'Add',   data:[...addArr], borderColor:'#d97706', borderWidth:2, borderDash:[6,3], pointRadius:0, tension:0.3, fill:false },
-              { label:'Sub',   data:[...subArr], borderColor:'#e11d48', borderWidth:2, borderDash:[2,4], pointRadius:0, tension:0.3, fill:false },
-              { label:'Thr',   data:new Array(POINTS).fill(thr), borderColor:'#059669', borderWidth:2, borderDash:[4,4], pointRadius:0, fill:false }
-            ]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false, animation: false,
-            plugins: { legend: { display: false }, tooltip: { enabled: false } },
-            scales: { x: { display: false }, y: { min: -250, max: 1350, ticks: { stepSize: 300, font: { size: 11, weight: 'bold' } }, grid: { color: 'rgba(0,0,0,0.05)' } } }
-          }
-        });
-      }
-
-      function simStep() {
-        t += 0.09;
-        n1 += (Math.random() - 0.5) * 90; n1 *= 0.83;
-        n2 += (Math.random() - 0.5) * 90; n2 *= 0.83;
-        const e1  = Math.max(0, Math.round(270 + 240*Math.abs(Math.sin(t*0.65)) + n1 + 70*Math.sin(t*2.1)));
-        const e2  = Math.max(0, Math.round(180 + 210*Math.abs(Math.sin(t*0.48+1.2)) + n2 + 55*Math.cos(t*1.75)));
-        const add = e1 + e2;
-        const sub = e1 - e2;
-        const thr = +thrInput.value;
-
-        e1Arr.push(e1); e1Arr.shift();
-        e2Arr.push(e2); e2Arr.shift();
-        addArr.push(add); addArr.shift();
-        subArr.push(sub); subArr.shift();
-        if (e1 > pk1) pk1 = e1;
-        if (e2 > pk2) pk2 = e2;
-
-        if (v_e1) v_e1.textContent = e1;
-        if (v_e2) v_e2.textContent = e2;
-        if (v_add) v_add.textContent = add;
-        if (v_sub) v_sub.textContent = sub;
-        if (v_pk1) v_pk1.textContent = pk1;
-        if (v_pk2) v_pk2.textContent = pk2;
-
-        if (isRecording) {
-          recordedData.push({
-            timestampISO: new Date().toISOString(),
-            e1, e2, add, sub, thr
-          });
-          if (recStatusSpan && isRecording) recStatusSpan.innerHTML = `🔴 RECORDING · ${recordedData.length} samples`;
-        }
-
-        if (chart) {
-          chart.data.datasets[0].data = [...e1Arr];
-          chart.data.datasets[1].data = [...e2Arr];
-          chart.data.datasets[2].data = [...addArr];
-          chart.data.datasets[3].data = [...subArr];
-          chart.data.datasets[4].data = new Array(POINTS).fill(thr);
-          chart.update('none');
-        }
-
-        const ts = new Date().toLocaleTimeString('en-US', { hour12: false });
-        serialLinesBuffer.push({ ts, e1, e2, add, sub, thr });
-        if (serialLinesBuffer.length > 70) serialLinesBuffer.shift();
-        if (serialBody) {
-          serialBody.innerHTML = serialLinesBuffer.slice(-14).map(l =>
-            `<div class="serial-line"><span class="ts">[${l.ts}]</span> E1:<span class="e1c">${l.e1}</span> E2:<span class="e2c">${l.e2}</span> ADD:<span class="addc">${l.add}</span> SUB:<span class="subc">${l.sub}</span> THR:<span class="thrc">${l.thr}</span></div>`
-          ).join('');
-          serialBody.scrollTop = serialBody.scrollHeight;
-        }
-      }
-
-      function startSim() { if (simInt) clearInterval(simInt); simInt = setInterval(simStep, 80); }
-      function stopSim() { if (simInt) { clearInterval(simInt); simInt = null; } }
-
-      function showPage(id) {
-        if (id !== 'page-calib' && isRecording) {
-          alert('Recording is active. Please stop & save before leaving Calibration.');
-          return;
-        }
-        ['page-welcome','page-calib','page-done'].forEach(p => {
-          const el = document.getElementById(p);
-          if (el) el.classList.remove('active');
-        });
-        const target = document.getElementById(id);
-        if (target) target.classList.add('active');
-        if (id === 'page-calib') startSim();
-        else stopSim();
-      }
-
-      // Event listeners
-      if (goCalib) goCalib.addEventListener('click', () => showPage('page-calib'));
-      if (backBtn) backBtn.addEventListener('click', () => { if (isRecording) { alert('Stop recording first.'); return; } showPage('page-welcome'); });
-      if (resetBtn) resetBtn.addEventListener('click', () => {
-        if (isRecording) { alert('Please stop recording before resetting.'); return; }
-        pk1 = 0; pk2 = 0;
-        serialLinesBuffer = [];
-        if (serialBody) serialBody.innerHTML = '';
-        if (v_pk1) v_pk1.textContent = '0';
-        if (v_pk2) v_pk2.textContent = '0';
-        recordedData = [];
-        updateRecordingUI();
-      });
-      if (completeBtn) completeBtn.addEventListener('click', () => {
-        if (isRecording) { alert('Please stop recording before completing calibration.'); return; }
-        stopSim();
-        const doneThr = document.getElementById('done-thr');
-        if (doneThr) doneThr.textContent = thrInput.value + ' µV';
-        showPage('page-done');
-      });
-      if (recalibBtn) recalibBtn.addEventListener('click', () => { showPage('page-calib'); startSim(); });
-      if (homeBtn) homeBtn.addEventListener('click', () => { showPage('page-welcome'); });
-      if (thrInput) thrInput.addEventListener('input', () => {
-        if (thrOut) thrOut.textContent = thrInput.value + ' µV';
-        if (chart) { chart.data.datasets[4].data = new Array(POINTS).fill(+thrInput.value); chart.update('none'); }
-      });
-      if (startRecBtn) startRecBtn.addEventListener('click', startRecording);
-      if (stopRecBtn) stopRecBtn.addEventListener('click', stopAndSaveRecording);
-
-      // Initialize
-      updateRecordingUI();
-      buildChart();
-      if (document.getElementById('page-calib').classList.contains('active')) startSim();
+    /* ---------- EVENT LISTENERS (unchanged) ---------- */
+    $('go-calib').addEventListener('click',()=>showPage('page-calib'));
+    $('btn-back').addEventListener('click',()=>{if(isRecording){alert('Stop recording first.');return;}showPage('page-welcome');});
+    $('btn-reset').addEventListener('click',()=>{
+      if(isRecording){alert('Stop recording before resetting.');return;}
+      pk1=0;pk2=0;serialBuf=[];serialBody.innerHTML='';
+      $('v-pk1').textContent='0';$('v-pk2').textContent='0';
+      recordedData=[];updateRecordingUI();
+      e1Raw=new Array(POINTS).fill(0);e2Raw=new Array(POINTS).fill(0);
+      addRaw=new Array(POINTS).fill(0);subRaw=new Array(POINTS).fill(0);
+      updateSmoothed();scheduleRedraw();
+      GripSM.reset();
+      updateGripBadge('open');
     });
+    $('btn-complete').addEventListener('click',completeCalibration);
+    $('btn-recalib').addEventListener('click',()=>showPage('page-calib'));
+    $('btn-home').addEventListener('click',()=>showPage('page-welcome'));
+    startRecBtn.addEventListener('click',()=>{if(isRecording)return;recordedData=[];isRecording=true;updateRecordingUI();});
+    stopRecBtn.addEventListener('click',()=>{
+      isRecording=false;
+      if(!recordedData.length){alert('No data recorded.');updateRecordingUI();return;}
+      const now=new Date();
+      const fn='emg_'+now.getFullYear()+'-'+(now.getMonth()+1)+'-'+now.getDate()+'_'+now.getHours()+'-'+now.getMinutes()+'.csv';
+      if(downloadCSV(recordedData,fn)){const n=recordedData.length;recordedData=[];alert('Saved! '+n+' samples.');}
+      else alert('Save failed.');
+      updateRecordingUI();
+    });
+
+    /* ---------- INIT ---------- */
+    if(canvas){
+      ctx=canvas.getContext('2d');
+      new ResizeObserver(()=>resizeCanvasAndDraw()).observe(canvas.parentElement);
+      window.addEventListener('resize',()=>resizeCanvasAndDraw());
+      resizeCanvasAndDraw();
+    }
+    connectWS();      // tries WebSocket; falls back to SIM automatically
+    updateRecordingUI();
+  });
   })();
-</script>
-</body>
+  </script>
+  </body>
 </html>
